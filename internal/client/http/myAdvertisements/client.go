@@ -10,9 +10,8 @@ import (
 )
 
 // HttpGetMyAdvertisements выполняет GET-запрос для получения списка объявлений авторизованного пользователя
-func HttpGetMyAdvertisements(t *testing.T, token string, limit int) *http.Response {
+func HttpGetMyAdvertisements(t *testing.T, token string, limit int, search string) *http.Response {
+	t.Helper()
 	return apiRunner.GetRunner().Auth(token).Create().Get(path.MyAdvertisementsPath).
-		Query("limit", strconv.Itoa(limit)).
-		Expect(t).
-		End().Response
+		Query("limit", strconv.Itoa(limit)).Query("search", search).Expect(t).End().Response
 }

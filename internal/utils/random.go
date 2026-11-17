@@ -8,6 +8,7 @@ import (
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+// RandomString генерирует случайный суффикс для независимых тестовых данных.
 func RandomString(length int) string {
 	b := make([]byte, length)
 	for i := range b {

@@ -2,6 +2,7 @@ package utils
 
 import "unicode"
 
+// MixCase чередует регистр букв для проверки поиска без учёта регистра.
 func MixCase(text string) string {
 	runes := []rune(text)
 	letterIndex := 0

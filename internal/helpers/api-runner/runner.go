@@ -8,6 +8,8 @@ import (
 	"path"
 
 	"github.com/steinfletcher/apitest"
+
+	"api-tests-template/internal/constants/api"
 )
 
 const (
@@ -20,6 +22,7 @@ type ApiTest struct {
 	host      string
 }
 
+// New создаёт HTTP-клиент с адресом из API_URL.
 func New() *ApiTest {
 	return &ApiTest{
 		userAgent: defaultUserAgent,
@@ -27,6 +30,7 @@ func New() *ApiTest {
 	}
 }
 
+// GetRunner возвращает новый runner для независимого запроса.
 func GetRunner() *ApiTest {
 	return New()
 }
@@ -37,8 +41,9 @@ func (at *ApiTest) Auth(token string) *ApiTest {
 	return at
 }
 
+// Create настраивает сетевой запрос, авторизацию и ограничение времени ожидания.
 func (at *ApiTest) Create() *apitest.APITest {
-	apitestNew := apitest.New().EnableNetworking()
+	apitestNew := apitest.New().EnableNetworking().HttpClient(&http.Client{Timeout: api.RequestTimeout})
 	if os.Getenv("DEBUG") == "true" {
 		apitestNew = apitestNew.Debug()
 	}
@@ -56,6 +61,7 @@ func (at *ApiTest) Create() *apitest.APITest {
 		})
 }
 
+// mergeServiceUrls добавляет к относительному пути базовый адрес API.
 func mergeServiceUrls(host string, r *url.URL) error {
 	if host == "" {
 		return fmt.Errorf("API_URL не задан: проверьте переменные окружения")

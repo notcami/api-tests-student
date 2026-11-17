@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// LoadSpecificEnvFile загружает файл настроек относительно корня Go-модуля.
 func LoadSpecificEnvFile(envFile string) {
 	goModDirPath := findGoModDir(searchCallerFile())
 
@@ -29,11 +30,13 @@ func LoadSpecificEnvFile(envFile string) {
 	}
 }
 
+// LoadEnv загружает базовые настройки, затем локальные значения из .env.override.
 func LoadEnv() {
 	LoadSpecificEnvFile(".env")
 	LoadSpecificEnvFile(".env.override")
 }
 
+// searchCallerFile находит исходный файл вызывающего кода для поиска корня модуля.
 func searchCallerFile() string {
 	_, file, _, ok := runtime.Caller(1)
 	if !ok {
@@ -50,6 +53,7 @@ func searchCallerFile() string {
 	return file
 }
 
+// findGoModDir поднимается по каталогам до ближайшего go.mod.
 func findGoModDir(from string) string {
 	dir := filepath.Dir(from)
 	gopath := filepath.Clean(os.Getenv("GOPATH"))

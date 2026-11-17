@@ -1,82 +1,40 @@
 package advertisementSearch
 
 import (
-	"os"
+	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-
 	"api-tests-template/internal/assertions"
-	advList "api-tests-template/internal/managers/advertisements"
-	"api-tests-template/internal/managers/auth"
-	authModels "api-tests-template/internal/managers/auth/models"
+	"api-tests-template/internal/managers/advertisements"
 	"api-tests-template/internal/utils"
-	base "api-tests-template/tests"
+	"api-tests-template/tests/support"
 )
 
-const (
-	existingAdTitle = "something"
-	searchBeginning = "some"
-	searchMiddle    = "meth"
-	searchEnd       = "thing"
-)
-
-type TestSuite struct {
-	suite.Suite
-	loginData authModels.LoginOkResponse
-}
-
-func TestSuiteRun(t *testing.T) {
-	suite.Run(t, &TestSuite{})
-}
-
-func (s *TestSuite) SetupSuite() {
-	base.SetupSuite()
-
-	base.Precondition("Проверяем, что константы для поиска заданы")
-	require.NotEmpty(s.T(), existingAdTitle, "задайте existingAdTitle")
-	require.NotEmpty(s.T(), searchBeginning, "задайте searchBeginning")
-	require.NotEmpty(s.T(), searchMiddle, "задайте searchMiddle")
-	require.NotEmpty(s.T(), searchEnd, "задайте searchEnd")
-
-	s.loginData = auth.Login(s.T(), os.Getenv("TEST_LOGIN"), os.Getenv("TEST_PASSWORD"))
-}
-
-func (s *TestSuite) TearDownSuite() {
-	base.TearDownSuite()
-}
-
-func (s *TestSuite) TestSearchByTitle() {
-	list := advList.GetAdvertisementsList(s.T(), s.loginData.Token, searchMiddle)
-
-	s.Run("В ответе есть хотя бы одно объявление", func() {
-		require.NotEmpty(s.T(), list.Items)
-	})
-
-	s.Run("Среди найденных есть наше объявление", func() {
-		assertions.ContainsAdvertisementByTitle(s.T(), list.Items, existingAdTitle)
-	})
-}
-
-func (s *TestSuite) TestSearchByTitle_Substring() {
+func TestSearchByTitleSubstring(t *testing.T) {
 	cases := []struct {
-		name   string
-		search string
+		name  string
+		query func(string) string
 	}{
-		{"начало", searchBeginning},
-		{"середина", searchMiddle},
-		{"конец", searchEnd},
-		{"нижний регистр", strings.ToLower(searchMiddle)},
-		{"верхний регистр", strings.ToUpper(searchMiddle)},
-		{"смешанный регистр", utils.MixCase(searchMiddle)},
+		{name: "beginning", query: func(id string) string { return "some" + id }},
+		{name: "middle", query: func(id string) string { return "middle" + id }},
+		{name: "end", query: func(id string) string { return id + "thing" }},
+		{name: "lower_case", query: func(id string) string { return strings.ToLower("middle" + id) }},
+		{name: "upper_case", query: func(id string) string { return strings.ToUpper("middle" + id) }},
+		{name: "mixed_case", query: func(id string) string { return utils.MixCase("middle" + id) }},
 	}
-
 	for _, tc := range cases {
-		s.Run(tc.name, func() {
-			list := advList.GetAdvertisementsList(s.T(), s.loginData.Token, tc.search)
-			assertions.ContainsAdvertisementByTitle(s.T(), list.Items, existingAdTitle)
+		t.Run(tc.name, func(t *testing.T) {
+			owner := support.Login(t)
+			request := support.ValidAdvertisement(t)
+			suffix := utils.RandomString(8)
+			request.Fields["title"] = fmt.Sprintf("some%s middle%s %sthing", suffix, suffix, suffix)
+			created := advertisements.CreateAdvertisement(t, owner.Token, request)
+			query := tc.query(suffix)
+			t.Logf("[Step] Ищем созданное объявление по подстроке %q", query)
+			list := advertisements.GetAdvertisementsList(t, owner.Token, query)
+			assertions.ContainsAdvertisementByTitle(t, list.Items, created.Title)
+			t.Log("[Check] Созданное объявление найдено")
 		})
 	}
 }
