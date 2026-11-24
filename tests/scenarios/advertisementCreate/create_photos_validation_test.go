@@ -1,6 +1,7 @@
 package advertisementCreate
 
 import (
+	_ "embed"
 	"net/http"
 	"testing"
 
@@ -10,6 +11,19 @@ import (
 	"api-tests-template/internal/managers/advertisements/models"
 	"api-tests-template/tests/support"
 )
+
+//go:embed testdata/lamp.bmp
+var bmpPhoto []byte
+
+func TestCreateAdvertisementWithUnsupportedPhotoFormat(t *testing.T) {
+	owner := support.Login(t)
+	request := support.ValidAdvertisement(t)
+	request.Photos[0] = models.PhotoUpload{Name: "lamp.bmp", Data: bmpPhoto}
+
+	t.Log("[Step] Создаём объявление с фотографией в формате BMP")
+	actual := advertisements.CreateAdvertisementWithError(t, owner.Token, request, http.StatusBadRequest)
+	assertions.APIError(t, actual, api.InvalidRequest, `photo 1: file type not allowed: extension ".bmp"`)
+}
 
 func TestCreateAdvertisementWithInvalidPhotoCount(t *testing.T) {
 	cases := []struct {
